@@ -1,6 +1,12 @@
 #include <Rcpp.h>
+// [[Rcpp::depends(RcppProgress)]]
+#include <progress.hpp>
 
-//TESTING THE NODE_TUPLE CLASS
+/*
+ * node_tuple class stores information for two nodes (i,j):
+ * node_tuple_list is a std::vector that will store the node tuples and function as an edgelist
+ * that can be complemented with additional information (currently node indices and state)
+ */
 class node_tuple {
 public:
   //constructor
@@ -40,6 +46,7 @@ void node_tuple::set_all(int set_i, int set_j, char set_i_state, char set_j_stat
 
 using namespace Rcpp;
 
+//expose the node_tuple class to allow export to R
 RCPP_EXPOSED_CLASS(node_tuple)
   RCPP_MODULE(mod_node_tuple){
     class_<node_tuple>("node_tuple")
@@ -54,57 +61,28 @@ RCPP_EXPOSED_CLASS(node_tuple)
     ;
   }
 
-//NOT WORKING CURRENTLY:: FIND OUT WHY
-/*
- * its not working because in node_tuple_list out(2); there is no default arguments being called
- * to the constructor. eg; its trying to make a vector of length 2 where each element is the node_tuple
- * object but it doesnt know what to do with it. so we need some default args.
- */
-//node_tuple_list
+//node_tuple_list functions as an edgelist (contactList in PLoS paper)
 typedef std::vector<node_tuple> node_tuple_list;
 
-// [[Rcpp::export]]
-List make_tuples(){
-  node_tuple_list out(2);
-  node_tuple out_1 (2,2,'i','r');
-  node_tuple out_2 (2,1,'r','s');
-  out[0] = out_1;
-  out[1] = out_2;
-  bool hi = out[1].get_j_state()=='f'; //testing character comparisons
-  Rcout << hi << std::endl;
-  Rcout << out_1.get_i() << std::endl;
-  return(List::create(Named("out")=out));
-}
+/*
+ * generate a node_tuple_list at t=0 from igraph edgelist input
+ */
 
-// [[Rcpp::export]]
-node_tuple make_a_tuple(){
-  node_tuple out (2,2,'r','r');
-  return(out);
-}
 
-// [[Rcpp::export]]
-node_tuple make_a_tuple_args(int i,int j,char i_state,char j_state){
-  node_tuple out (i,j,i_state,j_state);
-  return(out);
-}
 
+
+
+/*
+ * update_si updates m_SI; the takes a node_tuple_list at time t and returns a vector of 
+ * indicies where either the i_state or j_state of the node tuple at that index has one infected. 
+ */
 
 /***R
-tuple <- node_tuple$new(3,4,"s","i")
-tuple$get_i()
-tuple$get_i_state()
-tuple$set_all(2,2,"f","f")
-tuple$get_i()
-
-tuple1 <- make_a_tuple()
-tuple2 <- make_a_tuple_args(4,2,"s","r")
-tuple2$get_j_state()
-
-list_tuples <- make_tuples()
-
 #generate the network medium the simulation will be run on
-  library(igraph)
+library(igraph)
   erdos <- erdos.renyi.game(n=100,p=0.025,directed=TRUE,loops=FALSE)
   erdos_edge <- as_edgelist(erdos)
   erdos_edge <- erdos_edge[order(erdos_edge[,1]),]
+
+
 */

@@ -1,25 +1,5 @@
 #include <Rcpp.h>
 
-// class Test {
-// public:
-//   Test(int x): x_(x) {}
-//   int getValue() { return x_; }
-//   void addValue(int y) { x_ += y; }
-//   void merge(const Test& rhs) { x_ += rhs.x_; }
-// private:
-//   int x_;
-// };
-// 
-// class Test1 {
-// public:
-//   Test1(int x, char y): x_(x), y_(y) {}
-//   int get_x() { return x_; }
-//   char get_y() { return y_; }
-// private:
-//   int x_;
-//   char y_;
-// };
-
 //TESTING THE NODE_TUPLE CLASS
 class node_tuple {
 public:
@@ -60,28 +40,6 @@ void node_tuple::set_all(int set_i, int set_j, char set_i_state, char set_j_stat
 
 using namespace Rcpp;
 
-// RCPP_EXPOSED_CLASS(Test)
-//   RCPP_MODULE(mod_test) {
-//     
-//     class_<Test>("Test")
-//     
-//     .constructor<int>("sets initial value")
-//     
-//     .method("getValue", &Test::getValue, "Returns the value")
-//     .method("addValue", &Test::addValue, "Adds a value")
-//     .method("merge", &Test::merge, "Merges another Test into this object")
-//     ;
-//   }
-// 
-// RCPP_EXPOSED_CLASS(Test1)
-//   RCPP_MODULE(mod_test1){
-//     class_<Test1>("Test1")
-//     .constructor<int,char>("set up test1")
-//     .method("get_x", &Test1::get_x,"returns x")
-//     .method("get_y", &Test1::get_y,"returns y")
-//     ;
-//   }
-
 RCPP_EXPOSED_CLASS(node_tuple)
   RCPP_MODULE(mod_node_tuple){
     class_<node_tuple>("node_tuple")
@@ -110,8 +68,6 @@ List make_tuples(){
   node_tuple_list out(2);
   node_tuple out_1 (2,2,'i','r');
   node_tuple out_2 (2,1,'r','s');
-  // out[0] = out_1.set_all(2,2,'i','i');
-  // out[1] = out_2.set_all(3,2,'i','i');
   out[0] = out_1;
   out[1] = out_2;
   bool hi = out[1].get_j_state()=='f'; //testing character comparisons
@@ -143,4 +99,6 @@ tuple$get_i()
 tuple1 <- make_a_tuple()
 tuple2 <- make_a_tuple_args(4,2,"s","r")
 tuple2$get_j_state()
+
+list_tuples <- make_tuples()
 */

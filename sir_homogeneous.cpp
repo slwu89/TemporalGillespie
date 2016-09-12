@@ -14,7 +14,9 @@ public:
   node_tuple(int i, int j, char i_state, char j_state): i(i), j(j), i_state(i_state), j_state(j_state) {}
   //element assignment
   void set_i (int,char);
+  void set_i_state (char);
   void set_j (int,char);
+  void set_j_state (char);
   void set_all (int,int,char,char);
   //element accessors
   int get_i() {return i;}
@@ -43,6 +45,12 @@ void node_tuple::set_all(int set_i, int set_j, char set_i_state, char set_j_stat
   j = set_j;
   j_state = set_j_state;
 }
+void node_tuple::set_i_state(char set_i_state){
+  i_state = set_i_state;
+}
+void node_tuple::set_j_state(char set_j_state){
+  j_state = set_j_state;
+}
 
 using namespace Rcpp;
 
@@ -54,6 +62,8 @@ RCPP_EXPOSED_CLASS(node_tuple)
     .method("set_i", &node_tuple::set_i,"sets node i attributes")
     .method("set_j", &node_tuple::set_j,"sets node j attributes")
     .method("set_all", &node_tuple::set_all,"sets node tuple attributes")
+    .method("set_i_state", &node_tuple::set_i_state,"sets node i state")
+    .method("set_j_state", &node_tuple::set_j_state,"sets node j state")
     .method("get_i", &node_tuple::get_i,"gets node i index")
     .method("get_j", &node_tuple::get_j,"gets node j index")
     .method("get_i_state", &node_tuple::get_i_state,"gets node i state")
@@ -86,10 +96,10 @@ List init_node_tuple_list(NumericMatrix edge, int root){
     node_tuple tuple_i (i_index,j_index,'s','s');
     //check for root node
     if(i_index == root){
-      tuple_i.set_i(i_index,'i');
+      tuple_i.set_i_state('i');
     }
     if(j_index == root){
-      tuple_i.set_j(j_index,'i');
+      tuple_i.set_j_state('i');
     }
     contactList[i] = tuple_i;
     
@@ -110,6 +120,6 @@ library(igraph)
   erdos_edge <- as_edgelist(erdos)
   erdos_edge <- erdos_edge[order(erdos_edge[,1]),]
   
-contactList <- init_node_tuple_list(erdos_edge)
+contactList <- init_node_tuple_list(erdos_edge,5)
 sapply(contactList$out,function(x){c(x$get_i(),x$get_j(),x$get_i_state(),x$get_j_state())})
 */

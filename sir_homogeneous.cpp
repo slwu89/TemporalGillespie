@@ -65,12 +65,38 @@ RCPP_EXPOSED_CLASS(node_tuple)
 typedef std::vector<node_tuple> node_tuple_list;
 
 /*
- * generate a node_tuple_list at t=0 from igraph edgelist input
+ * generate a node_tuple_list at t=0 from igraph edgelist input, corresponding to contactList
+ * in PLoS paper.
  */
-
-
-
-
+//TEST FUNCTION EXPORT SEXP LIST; when put in C export the std::vector node_tuple_list
+//right now everyone susceptible
+// [[Rcpp::export]]
+List init_node_tuple_list(NumericMatrix edge, int root){
+  
+  //allocate contactList
+  int n_edge = edge.nrow();
+  node_tuple_list contactList(n_edge);
+  
+  for(int i=0; i<n_edge; i++){
+    
+    //generate tuple i
+    int i_index = edge(i,0);
+    int j_index = edge(i,1);
+    Rcout << "i_index: " << i_index << ", j_index: " << j_index << std::endl;
+    node_tuple tuple_i (i_index,j_index,'s','s');
+    //check for root node
+    if(i_index == root){
+      tuple_i.set_i(i_index,'i');
+    }
+    if(j_index == root){
+      tuple_i.set_j(j_index,'i');
+    }
+    contactList[i] = tuple_i;
+    
+  }
+  
+  return(List::create(Named("out")=contactList));
+}
 
 /*
  * update_si updates m_SI; the takes a node_tuple_list at time t and returns a vector of 
@@ -83,6 +109,7 @@ library(igraph)
   erdos <- erdos.renyi.game(n=100,p=0.025,directed=TRUE,loops=FALSE)
   erdos_edge <- as_edgelist(erdos)
   erdos_edge <- erdos_edge[order(erdos_edge[,1]),]
-
-
+  
+contactList <- init_node_tuple_list(erdos_edge)
+sapply(contactList$out,function(x){c(x$get_i(),x$get_j(),x$get_i_state(),x$get_j_state())})
 */

@@ -70,9 +70,9 @@ List make_tuples(){
   node_tuple out_2 (2,1,'r','s');
   out[0] = out_1;
   out[1] = out_2;
-  bool hi = out[1].get_j_state()=='f'; //testing character comparisons
-  Rcout << hi << std::endl;
-  Rcout << out_1.get_i() << std::endl;
+  // bool hi = out[1].get_j_state()=='f'; //testing character comparisons
+  // Rcout << hi << std::endl;
+  // Rcout << out_1.get_i() << std::endl;
   return(List::create(Named("out")=out));
 }
 

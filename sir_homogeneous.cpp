@@ -232,4 +232,5 @@ void sir_homogeneous(NumericMatrix edge, int root, double mu, int t_end){
   for(int t=0; t<t_end; t++){
     
   }
+  
 }

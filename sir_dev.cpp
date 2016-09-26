@@ -183,6 +183,9 @@ void sir_homogeneous(NumericMatrix edge, int root, double beta, double mu, int t
   int iter = 0; //iterator
   double beta_cum; //cumulative infection rate
   double lambda_cum; //cumulative transition rate
+  double r_transition_type; //random variable for choosing which type of transition happens
+  double xi; //fraction of time-step left before transition
+  int m; //transition process number
 
   while(time <= t_end){
     
@@ -195,8 +198,47 @@ void sir_homogeneous(NumericMatrix edge, int root, double beta, double mu, int t
     
     // Check if transition takes place during time-step:
     if(tau >= lambda_cum){ //no transition takes place
-      tau -= lambda_cum;
+      
+      tau = tau - lambda_cum;
+      
     } else { //at least one transition took place
+      
+      xi = 1.0; //fraction of time-step left before transition
+      
+      // Sampling step:
+      while(tau < xi*lambda_cum){ //repeat if next tau is smaller than ~ Lambda-tau
+        
+        xi = xi - tau/lambda_cum; //fraction of time-step left after transition
+        r_transition_type = lambda_cum * R::runif(0.0,1.0); //random variable for weighted sampling of transitions
+        
+        if(r_transition_type < beta_cum){ //S to I
+          
+        }
+        
+        // if(r_transitionType<Beta) //S->I
+        // {
+        //   m=randint(SI); //transition m
+        //   isInfected[si_s[m]]=true;
+        //   isSusceptible[si_s[m]]=false;
+        //   // Add infected node to list:
+        //   infected.push_back(si_s[m]);
+        //   I++;
+        //   Mu+=mu;
+        // }
+        // else //I->R
+        // {
+        //   m=randint(I); //transition m
+        //   isInfected[infected[m]]=false;
+        //   // Remove drawn element from infected:
+        //   infected[m]=infected.back();
+        //   infected.pop_back();
+        //   I--;
+        //   R++;
+        //   Mu-=mu;
+        // }
+        
+        
+      }
       
     }
     

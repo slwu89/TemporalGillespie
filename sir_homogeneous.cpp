@@ -119,7 +119,6 @@ node_tuple_list init_contactList(NumericMatrix edge, int root){
     //generate tuple i
     int i_index = edge(i,0);
     int j_index = edge(i,1);
-    Rcout << "i_index: " << i_index << ", j_index: " << j_index << std::endl;
     node_tuple tuple_i (i_index,j_index,'s','s');
     //check for root node
     if(i_index == root){
@@ -134,6 +133,7 @@ node_tuple_list init_contactList(NumericMatrix edge, int root){
   
   return(contactList);
 }
+
 
 //function to return the number of unique elements of an edgelist
 //basically equivalent to length(unique(c(matrix[,1],matrix[,2])))
@@ -152,6 +152,7 @@ List num_unique_rcpp(NumericMatrix input){
     n_unique += 1;
     i++;
   }
+  elements.erase(n_unique,elements.length());
   return(List::create(Named("n_unique")=n_unique,Named("elements")=elements));
 }
 
@@ -173,9 +174,32 @@ int num_unique(NumericMatrix input){
 }
 
 /*
- * update_si updates m_SI; the takes a node_tuple_list at time t and returns a vector of 
- * indicies where either the i_state or j_state of the node tuple at that index has one infected. 
+ * Need to go through the contactList and create list of susceptible nodes in contact
+ * with infectious nodes
+ * in actuality this will take as input the contactList but we need to input some stuffs
+ * in order to test the function alone in Rcpp
+ * this creates a list of susceptible nodes in contact with infectious nodes
  */
+// [[Rcpp::export]]
+List generate_si_list(NumericMatrix edge, int root){
+  
+  node_tuple_list contactList = init_contactList(edge, root); //real input is contactList
+  node_tuple_list si_list;
+  
+  for(int i=0; i<contactList.size(); i++){
+    
+    //if neither infectious go to next iteration of loop (more efficient?)
+    if(contactList[i].get_i_state() == 's' && contactList[i].get_j_state() == 's'){
+      continue;
+    } else {
+      si_list.push_back(contactList[i]);
+    }
+    
+  } //end loop
+  
+  return(List::create(Named("si_list")=si_list));
+}
+
 
 /***R
 #generate the network medium the simulation will be run on
@@ -196,41 +220,41 @@ num_unique_rcpp(erdos_edge)
  * by an edgelist, which is the edge argument to the function. root is an integer: it tells us
  * which node is the initial infected
  */
-// [[Rcpp::export]]
-void sir_homogeneous(NumericMatrix edge, int root, double mu, int t_end){
-  
-  //number of nodes
-  int n_nodes = num_unique(edge);
-  
-  //initialize vector of node states
-  // std::vector<char> node_states(n_nodes);
-  // for(int i=0;i<n_nodes;i++){
-  //   node_states.push_back('s');
-  // }
-  
-  //initialize vector of node states
-  CharacterVector node_states;
-  for(int i=0;i<n_nodes;i++){
-    node_states.push_back('s');
-  }
-  Rcout << node_states << std::endl;//DEBUGGING
-  //set state of root node to i
-  node_states(root-1) = 'i';
-  
-  //number of nodes in each state
-  int n_inf = 1;
-  int n_rec = 0;
-  int n_sus = n_nodes - n_inf;
-  
-  //draw initial tau
-  double tau = R::rexp(1.0);
-  
-  //initialize contactList
-  node_tuple_list contactList = init_contactList(edge,root);
-  
-  //main simulation loop
-  for(int t=0; t<t_end; t++){
-    
-  }
-  
-}
+// // [[Rcpp::export]]
+// void sir_homogeneous(NumericMatrix edge, int root, double mu, int t_end){
+//   
+//   //number of nodes
+//   int n_nodes = num_unique(edge);
+//   
+//   //initialize vector of node states
+//   // std::vector<char> node_states(n_nodes);
+//   // for(int i=0;i<n_nodes;i++){
+//   //   node_states.push_back('s');
+//   // }
+//   
+//   //initialize vector of node states
+//   CharacterVector node_states;
+//   for(int i=0;i<n_nodes;i++){
+//     node_states.push_back('s');
+//   }
+//   Rcout << node_states << std::endl;//DEBUGGING
+//   //set state of root node to i
+//   node_states(root-1) = 'i';
+//   
+//   //number of nodes in each state
+//   int n_inf = 1;
+//   int n_rec = 0;
+//   int n_sus = n_nodes - n_inf;
+//   
+//   //draw initial tau
+//   double tau = R::rexp(1.0);
+//   
+//   //initialize contactList
+//   node_tuple_list contactList = init_contactList(edge,root);
+//   
+//   //main simulation loop
+//   for(int t=0; t<t_end; t++){
+//     
+//   }
+//   
+// }

@@ -75,6 +75,8 @@ RCPP_EXPOSED_CLASS(node_tuple)
 //node_tuple_list functions as an edgelist (contactList in PLoS paper)
 typedef std::vector<node_tuple> node_tuple_list;
 
+
+
 /*
  * Gillespie algorithm to simulate SIR model on static network medium.
  * it will simulate a single trajectory of a time-homogeneous CTMC process.
@@ -148,8 +150,10 @@ node_tuple_list generate_si_list(node_tuple_list contactList){
 
 /*
  * note root uses 0 subsetting
+ * beta: base infection rate
+ * mu: base recovery rate
  */
-void sir_homogeneous(NumericMatrix edge, int root, double mu, int t_end){
+void sir_homogeneous(NumericMatrix edge, int root, double beta, double mu, int t_end){
 
   //number of nodes
   int n_nodes = num_unique(edge);
@@ -175,16 +179,26 @@ void sir_homogeneous(NumericMatrix edge, int root, double mu, int t_end){
   node_tuple_list contactList = init_contactList(edge,root);
 
   //main simulation loop
-  double time = 0.0;
-  int iter = 0;
-  
+  double time = 0.0; //time
+  int iter = 0; //iterator
+  double beta_cum; //cumulative infection rate
+  double lambda_cum; //cumulative transition rate
+
   while(time <= t_end){
     
     //generate list of possible SI transitions
     node_tuple_list si_list = generate_si_list(contactList);
     
-    int si_n = si_list.size();
+    int si_n = si_list.size(); //number of SI tuples
+    beta_cum = si_n * beta; //cumulative infection rate
+    lambda_cum = beta_cum + mu; //cumulative transition rate
     
+    // Check if transition takes place during time-step:
+    if(tau >= lambda_cum){ //no transition takes place
+      tau -= lambda_cum;
+    } else { //at least one transition took place
+      
+    }
     
     iter++; //update iterator
   }

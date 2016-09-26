@@ -82,7 +82,7 @@ typedef std::vector<node_tuple> node_tuple_list;
 //TEST FUNCTION EXPORT SEXP LIST; when put in C export the std::vector node_tuple_list
 //right now everyone susceptible
 // [[Rcpp::export]]
-List init_node_tuple_list(NumericMatrix edge, int root){
+List init_contactList_rcpp(NumericMatrix edge, int root){
   
   //allocate contactList
   int n_edge = edge.nrow();
@@ -179,17 +179,19 @@ int num_unique(NumericMatrix input){
  * in actuality this will take as input the contactList but we need to input some stuffs
  * in order to test the function alone in Rcpp
  * this creates a list of susceptible nodes in contact with infectious nodes
+ * it is a node_tuple_list and must be updated after every new infection event
  */
 // [[Rcpp::export]]
-List generate_si_list(NumericMatrix edge, int root){
+List generate_si_list_rcpp(NumericMatrix edge, int root){
   
   node_tuple_list contactList = init_contactList(edge, root); //real input is contactList
   node_tuple_list si_list;
   
   for(int i=0; i<contactList.size(); i++){
     
-    //if neither infectious go to next iteration of loop (more efficient?)
-    if(contactList[i].get_i_state() == 's' && contactList[i].get_j_state() == 's'){
+    //if neither infectious go to next iteration of loop;
+    //dont want to store any combination of S or R people
+    if(contactList[i].get_i_state() != 'i' && contactList[i].get_j_state() != 'i'){
       continue;
     } else {
       si_list.push_back(contactList[i]);
@@ -200,6 +202,26 @@ List generate_si_list(NumericMatrix edge, int root){
   return(List::create(Named("si_list")=si_list));
 }
 
+//actual function
+node_tuple_list generate_si_list(node_tuple_list contactList){
+  
+  node_tuple_list si_list;
+  
+  for(int i=0; i<contactList.size(); i++){
+    
+    //if neither infectious go to next iteration of loop;
+    //dont want to store any combination of S or R people
+    if(contactList[i].get_i_state() != 'i' && contactList[i].get_j_state() != 'i'){
+      continue;
+    } else {
+      si_list.push_back(contactList[i]);
+    }
+    
+  } //end loop
+  
+  return(si_list);
+}
+
 
 /***R
 #generate the network medium the simulation will be run on
@@ -208,7 +230,7 @@ library(igraph)
   erdos_edge <- as_edgelist(erdos)
   erdos_edge <- erdos_edge[order(erdos_edge[,1]),]
   
-contactList <- init_node_tuple_list(erdos_edge,5)
+contactList <- init_contactList_rcpp(erdos_edge,5)
 t(sapply(contactList$out,function(x){c(x$get_i(),x$get_j(),x$get_i_state(),x$get_j_state())}))
 
 num_unique_rcpp(erdos_edge)

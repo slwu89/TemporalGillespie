@@ -6,7 +6,7 @@ erdos_edge <- erdos_edge[order(erdos_edge[,1]),]
 
 #number of unique nodes from edgelist
 num_unique <- function(edge){
-  return(length(unique(as.vector(erdos_edge))))
+  return(length(unique(as.vector(edge))))
 }
 
 #initalize the contactList of node tuples
@@ -50,78 +50,114 @@ generate_si_list <- function(contactList){
   return(si_list)
 }
 
+beta <- 3/5 # R0 / infectious duration
+mu <- 1/5 # 1 / infectious duration
 
-#main simulation function
-sir_homogeneous <- function(edge, root , beta, mu, t_end){
+set.seed(1)
+tmp <- sir_homogeneous(100,erdos_edge,5,beta,mu,20)
+
+sir_homogeneous <- function(n_nodes, edge, root, beta, mu, t_end, info=TRUE){
   
-  #number of nodes / states
-  n_nodes = num_unique(edge)
-  n_inf = 1L
-  n_rec = 0L
-  n_sus = n_nodes - n_inf
+  output <- vector(mode="list",length=t_end) #OUTPUT LIST
   
-  #draw initial tau
-  tau = rexp(1)
+  # n_nodes <- length(unique(as.vector(edge)))
   
-  #initialize contactList
-  contactList <- init_contactList(edge,root)
+  x <- rep("s",n_nodes) #set node states to S 
+  x[root] <- "i" #set state of root node to I
   
-  #initialize parameters for main loop
-  time = 0.0 #time
-  iter = 0L #iterator
-  Mu = mu
-  Beta = 0.0 #cumulative infection rate
-  Lambda = 0.0 #cumulative transition rate
-  r_transitionType = 0.0 #random variable for choosing which type of transition happens
-  xi = 0.0 #fraction of time step left before transition
-  m = 0L #transition process number
-  contactList_t <- contactList #state of node tuples at iteration t
-  contactList_t_i <- sapply(contactList_t,function(x){x$i})
-  contactList_t_j <- sapply(contactList_t,function(x){x$j})
+  m_I <- root #list of infected nodes
+  N_I <- 1 #number of infected nodes
+  N_R <- 0 #number of recovered nodes
+  Mu <- mu #cumulative recovery rate
+  tau <- rexp(n=1,rate=1) #draw tau Exp(1)
   
+  #run through the time-steps:
   for(t in 1:t_end){
     
-    si_list <- generate_si_list(contactList_t)
-    
-    n_si = length(si_list)
-    Beta = beta*n_si #cumulative infection rate
-    Lambda = mu + Beta #cumulative transition rate
-    
-    #check if a transition takes place
-    if(tau >= Lambda){ #no transition takes place
-      
-      tau = tau - Lambda
-      
-    } else { #at least one transition takes place
-      
-      xi = 1.0 #remaining fraction of time-step (overshoot)
-      
-      #sampling step
-      while(tau < xi * Lambda){ #repeat if next tau is smaller than ~ Lambda-tau
-        
-        xi = xi - tau/Lambda #fraction of time-step left after transition
-        r_transitionType = Lambda * runif(1) #random variable for weighted sampling of transitions
-        if(r_transitionType < Beta){ #S to I
-          
-          m = sample(n_si,1) #transition m
-          #update newly infected nodes
-          new_inf = which(contactList_t_j == si_list[[m]]$j)
-          for(i in 1:length(new_inf)){
-            contactList_t[[new_inf[i]]]$j_state = "i"
-          }
-          
-          n_inf = n_inf + 1
-          Mu = Mu + mu
-          #line 310 in C++
-        }
-        
-      }
-      
+    #print simulation diagnostics
+    if(info){
+      print(paste0("current t: ",t,", number infected: ",N_I,", number recovered: ",N_R,", number susceptible: ",n_nodes-N_I-N_R))
     }
     
-  }
+    #update list of possible S to I transitions
+    m_SI <- NULL #S nodes in contact with I nodes
+    for(k in 1:nrow(edge)){
+      i <- edge[k,1]
+      j <- edge[k,2]
+      if(x[i] == "s" & x[j] == "i"){
+        m_SI <- c(m_SI,i)
+      } else if(x[i] == "i" & x[j] == "s"){
+        m_SI <- c(m_SI,j)
+      } else {
+        next()
+      }
+    } #end for
+    
+    M_SI <- length(m_SI)
+    Beta <- beta*M_SI #cumulative infection rate
+    Lambda <- Mu + Beta #cumulative transition rate
+    
+    #check if a transition takes place
+    if(Lambda < tau){ #no transition
+      tau = tau - Lambda
+    } else { #at least one transition
+      xi = 1.0 #remaining fraction of time-step
+      while(xi*Lambda >= tau){
+        z <- runif(n=1,min=0,max=Lambda-.Machine$double.eps)
+        if(z < Beta){ #S to I transition
+          m <- sample(x=m_SI,size=1) #drawn m at random from m_SI
+          x[m] <- "i"
+          m_I <- c(m_I,m)
+          N_I <- N_I + 1
+          Mu <- Mu + mu
+        } else { #I to R transition
+          m <- sample(x=m_I,size=1) #draw m at random from m_I
+          x[m] <- "r"
+          m_I <- m_I[-which(m_I==m)] #remove m from m_I
+          N_I <- N_I - 1
+          N_R <- N_R + 1
+          Mu <- Mu - mu
+        } #end if
+        
+        xi <- xi - tau/Lambda #update remaining fraction
+        
+        #update list of S to I transitions and rates
+        m_SI <- NULL #S nodes in contact with I nodes
+        for(k in 1:nrow(edge)){
+          i <- edge[k,1]
+          j <- edge[k,2]
+          if(x[i] == "s" & x[j] == "i"){
+            m_SI <- c(m_SI,i)
+          } else if(x[i] == "i" & x[j] == "s"){
+            m_SI <- c(m_SI,j)
+          } else {
+            next()
+          }
+        } #end for
+
+        M_SI <- length(m_SI)
+        Beta <- beta*M_SI #cumulative infection rate
+        Lambda <- Mu + Beta #cumulate transition rate
+        
+        tau = rexp(n=1,rate=1) #draw new tau
+        
+        if(n_nodes-N_I-N_R < 0){
+          browser()
+        }
+      } #end while
+    } #end if
+    
+
+    
+    #write out desired quantities
+    output[[t]]$x <- x
+    output[[t]]$m_SI <- m_SI
+    output[[t]]$m_I <- m_I
+    output[[t]]$N_I <- N_I
+    output[[t]]$N_R <- N_R
+    
+  } #end for
   
+  return(output)
 }
-
-
 

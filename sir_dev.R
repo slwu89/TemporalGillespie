@@ -1,22 +1,15 @@
-#generate the network medium the simulation will be run on
-library(igraph)
-n_nodes <- 100
-erdos <- erdos.renyi.game(n=n_nodes,p=0.04,directed=FALSE,loops=FALSE)
-erdos_edge <- as_edgelist(erdos)
-erdos_edge <- erdos_edge[order(erdos_edge[,1]),]
-
-beta <- 3/5 # R0 / infectious duration
-mu <- 1/5 # 1 / infectious duration
-
-set.seed(1)
-tmp <- sir_homogeneous(n_nodes,erdos_edge,5,beta,mu,20)
-
-sir_homogeneous <- function(n_nodes, edge, root, beta, mu, t_end, info=TRUE){
+#Gillespie SSA to run SIR model on static network (simulation of time-homogeneous CTMC on static network medium)
+sir_homogeneous <- function(n_nodes, edge, root, beta, mu, t_end, info=TRUE, detail=FALSE){
   
-  output <- vector(mode="list",length=t_end) #OUTPUT LIST
+  output <- vector(mode="list",length=t_end)
   
-  # n_nodes <- length(unique(as.vector(edge)))
-  
+  #return vector of node states after each transition
+  if(detail){
+    delta_t <- 0.0
+    detail_out <- vector(mode="list",length=5e3L)
+    detail_i <- 1L
+  }  
+
   x <- rep("s",n_nodes) #set node states to S 
   x[root] <- "i" #set state of root node to I
   
@@ -96,10 +89,20 @@ sir_homogeneous <- function(n_nodes, edge, root, beta, mu, t_end, info=TRUE){
             next()
           }
         } #end for
-
+        
+        #return detailed output
+        if(detail){
+          if(detail_i > length(detail_out)){ #expand list
+            detail_out <- c(detail_out,vector(mode="list",length=100))
+          }
+          detail_out[[detail_i]]$x <- x
+          detail_out[[detail_i]]$time <- t + (tau / Lambda)
+          detail_i <- detail_i + 1L
+        }
+        
         M_SI <- length(m_SI)
         Beta <- beta*M_SI #cumulative infection rate
-        Lambda <- Mu + Beta #cumulate transition rate
+        Lambda <- Mu + Beta #cumulative transition rate
         
         tau = rexp(n=1,rate=1) #draw new tau
         
@@ -124,54 +127,53 @@ sir_homogeneous <- function(n_nodes, edge, root, beta, mu, t_end, info=TRUE){
     
   } #end for
   
-  return(Filter(Negate(is.null),output))
+  #return output
+  if(detail){
+    return(list(output=Filter(Negate(is.null),output),
+                detail_out=Filter(Negate(is.null),detail_out)))
+  } else {
+    return(Filter(Negate(is.null),output))
+  }
 }
 
 
+#generate the network medium the simulation will be run on
+library(igraph)
+n_nodes <- 200
+erdos <- erdos.renyi.game(n=n_nodes,p=0.025,directed=FALSE,loops=FALSE)
+erdos_edge <- as_edgelist(erdos)
+erdos_edge <- erdos_edge[order(erdos_edge[,1]),]
 
+beta <- 1.015/5 # R0 / infectious duration
+mu <- 1/5 # 1 / infectious duration
+set.seed(1)
+sir_out <- sir_homogeneous(n_nodes=n_nodes,edge=erdos_edge,root=5,beta=beta,mu=mu,
+                           t_end=50,info=TRUE,detail=TRUE)
 
-# #number of unique nodes from edgelist
-# num_unique <- function(edge){
-#   return(length(unique(as.vector(edge))))
-# }
-# 
-# #initalize the contactList of node tuples
-# init_contactList <- function(edge,root){
-#   
-#   contactList <- vector(mode="list",length=nrow(edge))
-#   
-#   for(i in 1:nrow(edge)){
-#     contactList[[i]]$i <- edge[i,1]
-#     contactList[[i]]$j <- edge[i,2]
-#     contactList[[i]]$i_state <- "s"
-#     contactList[[i]]$j_state <- "s"
-#     if(edge[i,1] == root){
-#       contactList[[i]]$i_state <- "i"
-#     }
-#     if(edge[i,2] == root){
-#       contactList[[i]]$j_state <- "i"
-#     }
-#   }
-#   
-#   return(contactList)
-# }
-# 
-# #take a contactList and return a list of SI tuples
-# generate_si_list <- function(contactList){
-#   
-#   si_list <- list()
-#   
-#   j <- 1 #iterator
-#   for(i in 1:length(contactList)){
-#     
-#     if(contactList[[i]]$i_state != "i" & contactList[[i]]$j_state != "i"){
-#       next()
-#     } else {
-#       si_list[[j]] <- contactList[[i]]
-#       j = j + 1
-#     }
-#     
-#   }
-#   
-#   return(si_list)
-# }
+sir_out_dat <- matrix(NA,nrow=length(sir_out),ncol=3)
+sir_out_dat[,1] <- sapply(sir_out,function(x){n_nodes - x$N_I - x$N_R}) #S
+sir_out_dat[,2] <- sapply(sir_out,function(x){x$N_I}) #I
+sir_out_dat[,3] <- sapply(sir_out,function(x){x$N_R}) #R
+
+get_state <- function(x){
+  tab <- table(x)
+  if(!"s" %in% names(tab)){
+    tab[["s"]] <- 0
+  }
+  if(!"i" %in% names(tab)){
+    tab[["i"]] <- 0
+  }
+  if(!"r" %in% names(tab)){
+    tab[["r"]] <- 0
+  }
+  return(tab[c("s","i","r")])
+}
+sir_out_detail <- t(sapply(sir_out$detail_out,function(x){
+  get_state(x$x)
+}))
+sir_out_detail_time <- sapply(sir_out$detail_out,function(x){x$time})
+
+par(mfrow=c(1,2))
+matplot(sir_out_dat,type="l",ylab="",main="Gillespie SSA on Static Network")
+matplot(sir_out_detail_time,sir_out_detail,type="l",xlab="",ylab="",main="Gillespie SSA on Static Network (Detailed Output)")
+par(mfrow=c(1,1))

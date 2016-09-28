@@ -150,10 +150,10 @@ set.seed(1)
 sir_out <- sir_homogeneous(n_nodes=n_nodes,edge=erdos_edge,root=5,beta=beta,mu=mu,
                            t_end=50,info=TRUE,detail=TRUE)
 
-sir_out_dat <- matrix(NA,nrow=length(sir_out),ncol=3)
-sir_out_dat[,1] <- sapply(sir_out,function(x){n_nodes - x$N_I - x$N_R}) #S
-sir_out_dat[,2] <- sapply(sir_out,function(x){x$N_I}) #I
-sir_out_dat[,3] <- sapply(sir_out,function(x){x$N_R}) #R
+sir_out_dat <- matrix(NA,nrow=length(sir_out$output),ncol=3)
+sir_out_dat[,1] <- sapply(sir_out$output,function(x){n_nodes - x$N_I - x$N_R}) #S
+sir_out_dat[,2] <- sapply(sir_out$output,function(x){x$N_I}) #I
+sir_out_dat[,3] <- sapply(sir_out$output,function(x){x$N_R}) #R
 
 get_state <- function(x){
   tab <- table(x)

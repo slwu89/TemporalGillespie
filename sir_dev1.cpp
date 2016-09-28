@@ -18,16 +18,15 @@ List sir_homogeneous(int n_nodes, NumericMatrix edge, int root, double beta, dou
   node_states x(n_nodes); //node states
   std::fill(x.begin(),x.end(),'s'); //set node states to I
   x[root] = 'i'; //set state of root node to I
-  if(x.at(root)=='i'){ //DEBUG
-    Rcout << "std::vector equality seems to work" << std::endl;
-  }
+
   std::vector<int> m_I; //vector of infected nodes
+  m_I.reserve(n_nodes);
   m_I.push_back(root);
   int N_I = 1; //number of infected nodes
   int N_R = 0; //number of recovered nodes
   double Mu = mu; //cumulative recovery rate
   double tau = R::rexp(1.0); //draw tau ~ exp(1)
-  
+
   //run through time-steps
   for(int t=0; t<t_end; t++){
 
@@ -38,30 +37,22 @@ List sir_homogeneous(int n_nodes, NumericMatrix edge, int root, double beta, dou
 
     //update list of possible S to I transitions
     std::vector<int> m_SI; //S nodes in contact with I nodes
+    m_SI.reserve(n_nodes);
     for(int k=0; k<edge.nrow(); k++){
-      int i = edge(k,0); //fix for erdos_edge starting at 1, NOT SURE
-      int j = edge(k,1);
-      i = i-1;
-      j = j-1;
-      Rcout << "i: " << i << ", j: " << j << ", k: " << k << std::endl;
+      int i = edge(k,0) - 1; //fix for erdos_edge starting at 1, NOT SURE
+      int j = edge(k,1) - 1;
       if(x.at(i) == 's' && x.at(j) == 'i'){
         m_SI.push_back(i);
-        Rcout << "m_SI is pushing i: " << i << std::endl;
       }
       if(x.at(i) == 'i' && x.at(j) == 's'){
         m_SI.push_back(j);
-        Rcout << "m_SI is pushing j: " << j << std::endl;
       }
     } //end for
-    
-    Rcout << "hi i am here" << std::endl; //DEBUG
     
     int M_SI = m_SI.size();
     double Beta = beta * M_SI; //cumulative infection rate
     double Lambda = Mu + Beta; //cumulative transition rate
     
-    Rcout << "M_SI: " << M_SI << ", Beta: " << Beta << ", Lambda: " << Lambda << ", tau: " << tau << std::endl;
-
     //check if a transition takes place
     if(tau >= Lambda){ //no transition
       tau -= Lambda;
@@ -91,7 +82,7 @@ List sir_homogeneous(int n_nodes, NumericMatrix edge, int root, double beta, dou
             m = m_I[index];
           }
           x[m] = 'r';
-          m_I.erase(m_I.begin()+m); //remove m from m_I
+          std::remove(m_I.begin(),m_I.end(),m); //remove m from m_I
           N_I -= 1;
           N_R += 1;
           Mu -= mu;
@@ -140,31 +131,8 @@ erdos <- erdos.renyi.game(n=n_nodes,p=0.025,directed=FALSE,loops=FALSE)
 erdos_edge <- as_edgelist(erdos)
 erdos_edge <- erdos_edge[order(erdos_edge[,1]),]
 
-beta <- 1.015/5 # R0 / infectious duration
+beta <- 1.15/5 # R0 / infectious duration
 mu <- 1/5 # 1 / infectious duration
 
-# sir_out <- sir_homogeneous(n_nodes=n_nodes,edge=erdos_edge,root=5,beta=beta,mu=mu,t_end=50,info=TRUE)
+sir_out <- sir_homogeneous(n_nodes=n_nodes,edge=erdos_edge,root=5,beta=beta,mu=mu,t_end=50,info=TRUE)
 */
-  
-
-// List sir_homogeneous(int n_nodes, int root){
-//   
-//   node_states_output output1;
-//   
-//   node_states x(n_nodes); //node states
-//   std::fill(x.begin(),x.end(),'s'); //set node states to I
-//   x[root] = 'i'; //set state of root node to I
-//   
-//   bool hi = x.at(root) == 'i';
-//   bool bye = x.at(0) == 'i';
-//   Rcout << "test equality: " << hi << std::endl << "test inequality: " << bye << std::endl;
-//   
-//   node_states x_new = x;
-//   
-//   x_new.erase(x_new.begin()+root);
-//   
-//   output1.push_back(x);
-//   output1.push_back(x_new);
-//   
-//   return(List::create(Named("x")=x,Named("x_new")=x_new,Named("output1")=output1));
-// }

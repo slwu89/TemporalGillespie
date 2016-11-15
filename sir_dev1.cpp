@@ -135,4 +135,22 @@ beta <- 1.15/5 # R0 / infectious duration
 mu <- 1/5 # 1 / infectious duration
 
 sir_out <- sir_homogeneous(n_nodes=n_nodes,edge=erdos_edge,root=5,beta=beta,mu=mu,t_end=50,info=TRUE)
+
+sir_out_df <- matrix(0,nrow=length(sir_out$output),ncol=3)
+for(i in 1:length(sir_out$output)){
+  out_i <- table(sir_out$output[[i]])
+  out_i_names <- names(out_i)
+  for(j in out_i_names){
+    if(j == "s"){
+      sir_out_df[i,1] = out_i[[j]]
+    }
+    if(j == "i"){
+      sir_out_df[i,2] = out_i[[j]]
+    }
+    if(j == "r"){
+      sir_out_df[i,3] = out_i[[j]]
+    }
+  }
+}
+
 */

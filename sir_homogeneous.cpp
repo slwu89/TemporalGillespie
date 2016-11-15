@@ -24,9 +24,9 @@ public:
   char get_i_state() {return i_state;}
   char get_j_state() {return j_state;}
 private:
-  int i; 
-  int j; 
-  char i_state; 
+  int i;
+  int j;
+  char i_state;
   char j_state;
 };
 
@@ -83,13 +83,13 @@ typedef std::vector<node_tuple> node_tuple_list;
 //right now everyone susceptible
 // [[Rcpp::export]]
 List init_contactList_rcpp(NumericMatrix edge, int root){
-  
+
   //allocate contactList
   int n_edge = edge.nrow();
   node_tuple_list contactList(n_edge);
-  
+
   for(int i=0; i<n_edge; i++){
-    
+
     //generate tuple i
     int i_index = edge(i,0);
     int j_index = edge(i,1);
@@ -102,9 +102,9 @@ List init_contactList_rcpp(NumericMatrix edge, int root){
       tuple_i.set_j_state('i');
     }
     contactList[i] = tuple_i;
-    
+
   }
-  
+
   return(List::create(Named("out")=contactList));
 }
 
@@ -113,9 +113,9 @@ node_tuple_list init_contactList(NumericMatrix edge, int root){
   //allocate contactList
   int n_edge = edge.nrow();
   node_tuple_list contactList(n_edge);
-  
+
   for(int i=0; i<n_edge; i++){
-    
+
     //generate tuple i
     int i_index = edge(i,0);
     int j_index = edge(i,1);
@@ -128,9 +128,9 @@ node_tuple_list init_contactList(NumericMatrix edge, int root){
       tuple_i.set_j_state('i');
     }
     contactList[i] = tuple_i;
-    
+
   }
-  
+
   return(contactList);
 }
 
@@ -183,12 +183,12 @@ int num_unique(NumericMatrix input){
  */
 // [[Rcpp::export]]
 List generate_si_list_rcpp(NumericMatrix edge, int root){
-  
+
   node_tuple_list contactList = init_contactList(edge, root); //real input is contactList
   node_tuple_list si_list;
-  
+
   for(int i=0; i<contactList.size(); i++){
-    
+
     //if neither infectious go to next iteration of loop;
     //dont want to store any combination of S or R people
     if(contactList[i].get_i_state() != 'i' && contactList[i].get_j_state() != 'i'){
@@ -196,19 +196,19 @@ List generate_si_list_rcpp(NumericMatrix edge, int root){
     } else {
       si_list.push_back(contactList[i]);
     }
-    
+
   } //end loop
-  
+
   return(List::create(Named("si_list")=si_list));
 }
 
 //actual function
 node_tuple_list generate_si_list(node_tuple_list contactList){
-  
+
   node_tuple_list si_list;
-  
+
   for(int i=0; i<contactList.size(); i++){
-    
+
     //if neither infectious go to next iteration of loop;
     //dont want to store any combination of S or R people
     if(contactList[i].get_i_state() != 'i' && contactList[i].get_j_state() != 'i'){
@@ -216,9 +216,9 @@ node_tuple_list generate_si_list(node_tuple_list contactList){
     } else {
       si_list.push_back(contactList[i]);
     }
-    
+
   } //end loop
-  
+
   return(si_list);
 }
 
@@ -229,7 +229,7 @@ library(igraph)
   erdos <- erdos.renyi.game(n=100,p=0.04,directed=TRUE,loops=FALSE)
   erdos_edge <- as_edgelist(erdos)
   erdos_edge <- erdos_edge[order(erdos_edge[,1]),]
-  
+
 contactList <- init_contactList_rcpp(erdos_edge,5)
 t(sapply(contactList$out,function(x){c(x$get_i(),x$get_j(),x$get_i_state(),x$get_j_state())}))
 
@@ -244,16 +244,16 @@ num_unique_rcpp(erdos_edge)
  */
 // // [[Rcpp::export]]
 // void sir_homogeneous(NumericMatrix edge, int root, double mu, int t_end){
-//   
+//
 //   //number of nodes
 //   int n_nodes = num_unique(edge);
-//   
+//
 //   //initialize vector of node states
 //   // std::vector<char> node_states(n_nodes);
 //   // for(int i=0;i<n_nodes;i++){
 //   //   node_states.push_back('s');
 //   // }
-//   
+//
 //   //initialize vector of node states
 //   CharacterVector node_states;
 //   for(int i=0;i<n_nodes;i++){
@@ -262,21 +262,21 @@ num_unique_rcpp(erdos_edge)
 //   Rcout << node_states << std::endl;//DEBUGGING
 //   //set state of root node to i
 //   node_states(root-1) = 'i';
-//   
+//
 //   //number of nodes in each state
 //   int n_inf = 1;
 //   int n_rec = 0;
 //   int n_sus = n_nodes - n_inf;
-//   
+//
 //   //draw initial tau
 //   double tau = R::rexp(1.0);
-//   
+//
 //   //initialize contactList
 //   node_tuple_list contactList = init_contactList(edge,root);
-//   
+//
 //   //main simulation loop
 //   for(int t=0; t<t_end; t++){
-//     
+//
 //   }
-//   
+//
 // }
